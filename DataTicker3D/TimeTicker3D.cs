@@ -13,7 +13,7 @@ namespace DataTicker3D
       public TimeTicker3D()
       {
          this.Brush = Brushes.MistyRose;
-         this.TickerWidth = 10.0;
+         this.TickerWidth = 2.0;
       }
 
       public GeometryModel3D TickerGeometryModel3D { get; protected set; }
@@ -41,8 +41,8 @@ namespace DataTicker3D
             Double x = (reading.Key - transform.xStartDate).Days;
             Double y = (reading.Value - transform.yDatum) * transform.yExaggeration;
             Double z = transform.zAdjustment;
-            meshGeom.Positions.Add(new Point3D(x, y - this.TickerWidth / 2, z));
-            meshGeom.Positions.Add(new Point3D(x, y + this.TickerWidth / 2, z));
+            meshGeom.Positions.Add(new Point3D(x, y, z - this.TickerWidth / 2));
+            meshGeom.Positions.Add(new Point3D(x, y, z + this.TickerWidth / 2));
          }
 
          for (int i = 0; i < (rawData_.Count - 1) * 2; i += 2)

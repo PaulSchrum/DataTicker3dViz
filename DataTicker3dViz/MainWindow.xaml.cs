@@ -65,7 +65,7 @@ namespace DataTicker3dViz
          this.camera.Position = new Point3D(15, 20, 35);
          this.camera.FieldOfView = 50;
          this.camera.LookDirection = new Vector3D(-10, -15, -35);
-         this.camera.UpDirection = new Vector3D(0, 10, 0);
+         this.camera.UpDirection = new Vector3D(0, 1, 0);
          cameraOriginalPosition = new Point3D(this.camera.Position.X,
             this.camera.Position.Y, this.camera.Position.Z);
 
