@@ -48,9 +48,10 @@ namespace DataTicker3dViz
       private Dictionary<System.Windows.Input.Key, bool> keyIsDown;
       private Vector3D viewpointVelocity { get; set; }
       private Double viewpointForwardSpeed { get; set; }
-      private Double viewpointRotationSpeedAboutWorldY { get; set; }
+      private Double viewpointRotationSpeedAboutWorldZ { get; set; }
       private Double viewpointUpAngleRotationSpeed { get; set; }
       private Point3D cameraOriginalPosition { get; set; }
+      private Vector3D totalCameraMoveVector { get; set; }
       private bool printDiagnostics { get; set; }
 
       public MainWindow()
@@ -59,8 +60,8 @@ namespace DataTicker3dViz
 
          //testRotateVector();
          viewpointVelocity = new Vector3D(0, 0, 0);
-         viewpointRotationSpeedAboutWorldY = 0.0;
-         viewpointUpAngleRotationSpeed = 0.0;
+         viewpointRotationSpeedAboutWorldZ = 0.0;
+         viewpointUpAngleRotationSpeed = 0.25;
          hydrateKeyIsDownDictionary();
          this.camera.Position = new Point3D(15, 20, 35);
          this.camera.FieldOfView = 50;
@@ -80,6 +81,7 @@ namespace DataTicker3dViz
             }
          }
 
+         testRotateVector();
          startMousePosition = new Point(0, 0);
          mouseDownCount = 0;
          dispatcherTimer.Interval = new TimeSpan(1000000L);
@@ -94,18 +96,20 @@ namespace DataTicker3dViz
       private void hydrateKeyIsDownDictionary()
       {
          keyIsDown = new Dictionary<System.Windows.Input.Key, bool>();
-         keyIsDown.Add(System.Windows.Input.Key.R, false);
-         keyIsDown.Add(System.Windows.Input.Key.A, false);
-         keyIsDown.Add(System.Windows.Input.Key.Z, false);
-         keyIsDown.Add(System.Windows.Input.Key.Space, false);
-         keyIsDown.Add(System.Windows.Input.Key.Up, false);
-         keyIsDown.Add(System.Windows.Input.Key.Down, false);
-         keyIsDown.Add(System.Windows.Input.Key.Left, false);
-         keyIsDown.Add(System.Windows.Input.Key.Right, false);
-         keyIsDown.Add(System.Windows.Input.Key.NumPad4, false);
-         keyIsDown.Add(System.Windows.Input.Key.NumPad6, false);
-         keyIsDown.Add(System.Windows.Input.Key.NumPad8, false);
-         keyIsDown.Add(System.Windows.Input.Key.NumPad2, false);
+         keyIsDown.Add(System.Windows.Input.Key.R, false);        // reset view to original position
+         keyIsDown.Add(System.Windows.Input.Key.A, false);        // accelerate forward
+         keyIsDown.Add(System.Windows.Input.Key.Z, false);        // accelerate backward
+         keyIsDown.Add(System.Windows.Input.Key.Space, false);    // reset acceleration to 0
+         keyIsDown.Add(System.Windows.Input.Key.Up, false);       // increase up angle
+         keyIsDown.Add(System.Windows.Input.Key.Down, false);     // decrease up angle (dive)
+         keyIsDown.Add(System.Windows.Input.Key.Left, false);     // rotate left
+         keyIsDown.Add(System.Windows.Input.Key.Right, false);    // rotate right
+         keyIsDown.Add(System.Windows.Input.Key.NumPad4, false);  // slew -X
+         keyIsDown.Add(System.Windows.Input.Key.NumPad6, false);  // slew +X
+         keyIsDown.Add(System.Windows.Input.Key.NumPad8, false);  // slew Up (+Y, world Z)
+         keyIsDown.Add(System.Windows.Input.Key.NumPad2, false);  // slew Down (-Y, world Z)
+         keyIsDown.Add(System.Windows.Input.Key.Divide, false);  // slew Left (+Z, world Y)
+         keyIsDown.Add(System.Windows.Input.Key.NumPad0, false);   // slew Right (-Z, world Y)
          
       }
 
@@ -363,6 +367,7 @@ namespace DataTicker3dViz
 
       private void processKeyPresses()
       {
+         totalCameraMoveVector = new Vector3D(0, 0, 0);
          Double speedIncrement = 0.01;
          Double maxSpeed = 2.0;
          if (keyIsDown[Key.A] == true)
@@ -389,28 +394,29 @@ namespace DataTicker3dViz
             Math.Sign(viewpointForwardSpeed) * maxSpeed :
             viewpointForwardSpeed;
 
-         Double zRotationSpeedIncrement = rad(0.2);
+         Double zRotationSpeedIncrement = 0.2;
          Double maxZrotationSpeed = zRotationSpeedIncrement * 10;
 
          if (keyIsDown[Key.Right] == true)
          {
-            viewpointRotationSpeedAboutWorldY += zRotationSpeedIncrement;
+            viewpointRotationSpeedAboutWorldZ += zRotationSpeedIncrement;
          }
          if (keyIsDown[Key.Left] == true)
          {
-            viewpointRotationSpeedAboutWorldY -= zRotationSpeedIncrement;
+            viewpointRotationSpeedAboutWorldZ -= zRotationSpeedIncrement;
          }
          zRotationSpeedIncrement = Math.Abs(zRotationSpeedIncrement) > maxZrotationSpeed ?
             Math.Sign(zRotationSpeedIncrement) * maxZrotationSpeed :
             zRotationSpeedIncrement;
 
-         //myDebugPrint(viewpointUpAngleRotationSpeed.ToString());
-         Double upAngle=0.0;
-         if (Math.Abs(viewpointUpAngleRotationSpeed) != 0.0)
+         Double upAngle=0.0;   Double upAngleChange = 0;
+         if(keyIsDown[Key.Down] == true) upAngleChange = viewpointUpAngleRotationSpeed;
+         if(keyIsDown[Key.Up] == true) upAngleChange = -1 * viewpointUpAngleRotationSpeed;
+         if (upAngleChange != 0.0)
          {
             upAngle = getUpAngle(this.camera.LookDirection);
             
-            upAngle += viewpointUpAngleRotationSpeed;
+            upAngle += upAngleChange;
 
             upAngle = Math.Abs(upAngle) > 86.0 ?
                Math.Sign(upAngle) * 86.0 :
@@ -418,32 +424,69 @@ namespace DataTicker3dViz
             myDebugPrint(upAngle.ToString());
             myDebugPrintObj(this.camera.LookDirection);
             this.camera.LookDirection =
-               rotateVector3DbyPitchingUp(upAngle, this.camera.LookDirection);
+               setVectorUpAngle(upAngle, this.camera.LookDirection);
             myDebugPrintObj(this.camera.LookDirection);
          }
-         //myDebugPrint(deg(getUpAngle(this.camera.LookDirection)).ToString());
 
          if (keyIsDown[Key.Left] || keyIsDown[Key.Right])
          {
             this.camera.LookDirection =
-               rotateVector3DaboutWorldZ(viewpointRotationSpeedAboutWorldY, this.camera.LookDirection);
-            //myDebugPrint(viewpointRotationSpeedAboutWorldY.ToString() + "  " + vectorAsAngles(this.camera.LookDirection));
-            //myDebugPrint(viewpointRotationSpeedAboutWorldY.ToString() + "  " + this.camera.LookDirection.ToString());
+               rotateVector3DaboutWorldZ(viewpointRotationSpeedAboutWorldZ, this.camera.LookDirection);
          }
          else
          {
             zRotationSpeedIncrement = 0.0;
-            viewpointRotationSpeedAboutWorldY = 0.0;
+            viewpointRotationSpeedAboutWorldZ = 0.0;
          }
 
          var vectorToAdd = viewpointForwardSpeed * this.camera.LookDirection / 
             this.camera.LookDirection.Length;
-            //new Vector3D(viewpointForwardSpeed, 0, 0);
-         this.camera.Position += vectorToAdd;
+         totalCameraMoveVector = totalCameraMoveVector + vectorToAdd;
 
-         //myDebugPrint(vectorAsAngles(this.camera.LookDirection));
-         //myDebugPrint(this.camera.LookDirection.ToString());
+         processSlewKeys();
 
+         this.camera.Position += totalCameraMoveVector;
+
+      }
+
+      private Double maxSlewSpeed = 1.0;
+      private Double xSlewSpeed = 0;
+      private Double ySlewSpeed = 0;
+      private Double zSlewSpeed = 0;
+      private readonly Double slewDelta = 0.2;
+      private void processSlewKeys()
+      {
+         if (keyIsDown[Key.NumPad4] == true || keyIsDown[Key.NumPad6] == true)
+         {
+            if (keyIsDown[Key.NumPad4] == true)
+               xSlewSpeed -= slewDelta;
+            else
+               xSlewSpeed += slewDelta;
+         }
+         else
+            xSlewSpeed = 0;
+
+         if (keyIsDown[Key.NumPad8] == true || keyIsDown[Key.NumPad2] == true)
+         {
+            if (keyIsDown[Key.NumPad8] == true)
+               ySlewSpeed -= slewDelta;
+            else
+               ySlewSpeed += slewDelta;
+         }
+         else
+            ySlewSpeed = 0;
+
+         if (keyIsDown[Key.Divide] == true || keyIsDown[Key.NumPad0] == true)
+         {
+            if (keyIsDown[Key.NumPad0] == true)
+               zSlewSpeed -= slewDelta;
+            else
+               zSlewSpeed += slewDelta;
+         }
+         else
+            zSlewSpeed = 0;
+
+         totalCameraMoveVector += new Vector3D(xSlewSpeed, zSlewSpeed, ySlewSpeed);
       }
 
       private void myDebugPrint(String s)
@@ -459,29 +502,32 @@ namespace DataTicker3dViz
 
       private void testRotateVector()
       {
-         var vec = new Vector3D(10, 5, 10);
-         Debug.Print(getXYplaneAngle(vec).ToString());
+         return;
+         var vec = new Vector3D(10, 15, 10);
+         Debug.Print(getXYplaneAngleDegrees(vec).ToString());
          var rotatedVec = rotateVector3DaboutWorldZ(-45.0, vec);
-         Debug.Print(getXYplaneAngle(rotatedVec).ToString());
+         Debug.Print(getXYplaneAngleDegrees(rotatedVec).ToString());
       }
 
       private Vector3D rotateVector3DaboutWorldZ(Double rotation, Vector3D vec)
       {
-         Double xyDirection = getXYplaneAngle(vec);
+         Double xyLength = getLengthProjToXYplane(vec);
+         Double xyDirection = getXYplaneAngleDegrees(vec);
          xyDirection += rotation;
          Double xyDirRad = rad(xyDirection);
          return new Vector3D(
-               vec.Length * Math.Cos(xyDirRad),
-               vec.Length * Math.Sin(xyDirRad),
+               xyLength * Math.Cos(xyDirRad),
+               xyLength * Math.Sin(xyDirRad),
                vec.Z);
       }
 
-      private Vector3D rotateVector3DbyPitchingUp(Double newUpAngle, Vector3D vec)
+      private Vector3D setVectorUpAngle(Double newUpAngle, Vector3D vec)
       {
+         Double newZvalue = getLengthProjToXYplane(vec) * Math.Tan(rad(newUpAngle));
          return new Vector3D(
             vec.X,
-            getLengthProjToXYplane(vec) * Math.Tan(rad(newUpAngle)), 
-            vec.Z);
+            vec.Y,
+            newZvalue);
       }
 
       private Double getLengthProjToXYplane(Vector3D vec)
@@ -489,14 +535,14 @@ namespace DataTicker3dViz
          return Math.Sqrt(vec.X * vec.X + vec.Y * vec.Y);
       }
 
-      private Double getXYplaneAngle(Vector3D vec)
+      private Double getXYplaneAngleDegrees(Vector3D vec)
       {
          return deg(Math.Atan2(vec.Y, vec.X));
       }
 
       private Double getUpAngle(Vector3D vec)
       {
-         return deg(Math.Atan2(vec.Y, getLengthProjToXYplane(vec)));
+         return deg(Math.Atan2(vec.Z, getLengthProjToXYplane(vec)));
       }
 
       private Double deg(Double rad)
