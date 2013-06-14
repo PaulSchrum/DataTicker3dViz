@@ -53,6 +53,7 @@ namespace DataTicker3dViz
       private Point3D cameraOriginalPosition { get; set; }
       private Vector3D totalCameraMoveVector { get; set; }
       private bool printDiagnostics { get; set; }
+      Double upAngle = 0.0;
 
       public MainWindow()
       {
@@ -63,9 +64,11 @@ namespace DataTicker3dViz
          viewpointRotationSpeedAboutWorldZ = 0.0;
          viewpointUpAngleRotationSpeed = 0.25;
          hydrateKeyIsDownDictionary();
-         this.camera.Position = new Point3D(15, 20, 35);
+         this.camera.Position = new Point3D(-10, 5, 25);
          this.camera.FieldOfView = 50;
-         this.camera.LookDirection = new Vector3D(-10, -15, -35);
+         //this.camera.LookDirection = new Vector3D(-10, -15, -35);
+         this.camera.LookDirection = new Vector3D(10, -1, -5);
+         this.upAngle = this.camera.LookDirection.getUpAngle();
          this.camera.UpDirection = new Vector3D(0, 1, 0);
          cameraOriginalPosition = new Point3D(this.camera.Position.X,
             this.camera.Position.Y, this.camera.Position.Z);
@@ -90,7 +93,17 @@ namespace DataTicker3dViz
 
          makeAtestObject();
          openDataFile();
+         updateGUItextBoxes();
+      }
 
+      private void updateGUItextBoxes()
+      {
+         this.txt_xyPlaneAngle.Text = deg(camera.LookDirection.getXYplaneAngle()).ToString();
+         this.txt_upAngle.Text = deg(this.camera.LookDirection.getUpAngle()).ToString();
+         this.txt_speed.Text = this.viewpointForwardSpeed.ToString();
+         this.txt_positionX.Text = this.camera.Position.X.ToString();
+         this.txt_positionY.Text = this.camera.Position.Y.ToString();
+         this.txt_positionZ.Text = this.camera.Position.Z.ToString();
       }
 
       private void hydrateKeyIsDownDictionary()
@@ -409,16 +422,16 @@ namespace DataTicker3dViz
             Math.Sign(zRotationSpeedIncrement) * maxZrotationSpeed :
             zRotationSpeedIncrement;
 
-         Double upAngle=0.0;   Double upAngleChange = 0;
+         Double upAngleChange = 0;
          if(keyIsDown[Key.Down] == true) upAngleChange = viewpointUpAngleRotationSpeed;
          if(keyIsDown[Key.Up] == true) upAngleChange = -1 * viewpointUpAngleRotationSpeed;
          if (upAngleChange != 0.0)
          {
-            upAngle = getUpAngle(this.camera.LookDirection);
-            
-            upAngle += upAngleChange;
+            this.upAngle = this.camera.LookDirection.getUpAngle();
 
-            upAngle = Math.Abs(upAngle) > 86.0 ?
+            this.upAngle += upAngleChange;
+
+            this.upAngle = Math.Abs(deg(upAngle)) > 86.0 ?
                Math.Sign(upAngle) * 86.0 :
                upAngle;
             myDebugPrint(upAngle.ToString());
@@ -446,6 +459,8 @@ namespace DataTicker3dViz
          processSlewKeys();
 
          this.camera.Position += totalCameraMoveVector;
+
+         updateGUItextBoxes();
 
       }
 
@@ -568,6 +583,24 @@ namespace DataTicker3dViz
          }
          return "Theta = " + deg(Math.Atan2(vec.Y, vec.X)) +
             "  Up Angle = " + deg(Math.Atan2(vec.Z, getLengthProjToXYplane(vec)));
+      }
+   }
+
+   public static class vector3dExtensionMethods
+   {
+      public static double getXYplaneAngle(this Vector3D vec)
+      {
+         return Math.Atan2(vec.Y, vec.X);
+      }
+
+      public static double xyPlaneLength(this Vector3D vec)
+      {
+         return Math.Sqrt(vec.X * vec.X + vec.Y * vec.Y);
+      }
+
+      public static double getUpAngle(this Vector3D vec)
+      {
+         return Math.Atan2(vec.Z, vec.xyPlaneLength());
       }
    }
 }

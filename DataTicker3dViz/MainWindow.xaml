@@ -1,24 +1,67 @@
 ﻿<Window x:Class="DataTicker3dViz.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="3D Data Visualization" Height="600" Width="700" PreviewKeyDown="Window_PreviewKeyDown" PreviewKeyUp="Window_PreviewKeyUp" 
+        Title="3D Data Visualization" Height="600" Width="700" PreviewKeyDown="Window_PreviewKeyDown" PreviewKeyUp="Window_PreviewKeyUp" Background="#FF010000" Foreground="{x:Null}" 
         >
-    <Grid Background="Black" MouseWheel="Grid_MouseWheel"
+    <Grid MouseWheel="Grid_MouseWheel"
 		MouseDown="Grid_MouseDown" MouseUp="Grid_MouseUp"
 		MouseMove="Grid_MouseMove" >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="3*" />
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <StackPanel HorizontalAlignment="Left" Grid.Column="0"
+                    Grid.RowSpan="3"
+                    VerticalAlignment="Top" 
+                    Background="#FFFFFFFF" >
+            <Label x:Name="lbl_xyPlaneAngle" 
+                   Content="XY Plane Angle:" 
+                   HorizontalAlignment="Left" 
+                   VerticalAlignment="Top" />
+            <TextBox x:Name="txt_xyPlaneAngle" />
+
+            <Label x:Name="lbl_upAngle" 
+                   Content="Up Angle:" 
+                   HorizontalAlignment="Left" 
+                   VerticalAlignment="Top" />
+            <TextBox x:Name="txt_upAngle" />
+
+            <Label x:Name="lbl_speed" 
+                   Content="Speed:" 
+                   HorizontalAlignment="Left" 
+                   VerticalAlignment="Top" />
+            <TextBox x:Name="txt_speed" />
+            
+            <GroupBox Margin="0,4,0,0"
+                HorizontalAlignment="Left">
+                <GroupBox.Header>
+                    Position
+                </GroupBox.Header>
+                <StackPanel>
+                    <Label Content="X:" />
+                    <TextBox x:Name="txt_positionX" />
+                    <Label Content="Y:" />
+                    <TextBox x:Name="txt_positionY" />
+                    <Label Content="Z:" />
+                    <TextBox x:Name="txt_positionZ" />
+                </StackPanel>
+            </GroupBox>
+
+        </StackPanel>
+
         <Button x:Name="button" 
-                Grid.Row="0" Content="Reset" 
+                Grid.Row="0" Grid.Column="1" Content="Reset" 
                 Click="Button_Click" HorizontalAlignment="Center" 
                 MaxWidth="350" 
                 />
 
-        <Viewport3D x:Name="viewport" Grid.Row="1">
+        <Viewport3D x:Name="viewport" Grid.Row="1" Grid.Column="1" >
             <Viewport3D.Camera>
                 <PerspectiveCamera x:Name="camera" 
                     FarPlaneDistance="500" 
@@ -42,7 +85,7 @@
         </Viewport3D>
 
         <Button x:Name="btn_openData" 
-                Grid.Row="2" Content="Open Data" 
+                Grid.Row="2" Grid.Column="1"  Content="Open Data" 
                 HorizontalAlignment="Center" 
                 MaxWidth="350" Click="btn_openData_Click" 
                 />
