@@ -14,6 +14,7 @@ namespace DataTicker3D
       {
          this.Brush = Brushes.MistyRose;
          this.TickerWidth = 2.0;
+         transform = new TimeTicker3Dtransform();
       }
 
       public GeometryModel3D TickerGeometryModel3D { get; protected set; }
@@ -66,7 +67,6 @@ namespace DataTicker3D
 
       private void setupTransform()
       {
-         transform = new TimeTicker3Dtransform();
          transform.xStartDate = rawData_.FirstOrDefault().Key.Date;
          transform.yDatum = (from reading in rawData_
                              select reading.Value).Min();

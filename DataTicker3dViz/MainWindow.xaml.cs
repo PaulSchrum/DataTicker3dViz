@@ -62,12 +62,12 @@ namespace DataTicker3dViz
          //testRotateVector();
          viewpointVelocity = new Vector3D(0, 0, 0);
          viewpointRotationSpeedAboutWorldZ = 0.0;
-         viewpointUpAngleRotationSpeed = 0.25;
+         viewpointUpAngleRotationSpeed = 0.05;
          hydrateKeyIsDownDictionary();
-         this.camera.Position = new Point3D(-10, 5, 25);
+         this.camera.Position = new Point3D(0, -4, 37);
          this.camera.FieldOfView = 50;
          //this.camera.LookDirection = new Vector3D(-10, -15, -35);
-         this.camera.LookDirection = new Vector3D(10, -1, -5);
+         this.camera.LookDirection = new Vector3D(5, 1, -10);
          this.upAngle = this.camera.LookDirection.getUpAngle();
          this.camera.UpDirection = new Vector3D(0, 1, 0);
          cameraOriginalPosition = new Point3D(this.camera.Position.X,
@@ -98,12 +98,15 @@ namespace DataTicker3dViz
 
       private void updateGUItextBoxes()
       {
-         this.txt_xyPlaneAngle.Text = deg(camera.LookDirection.getXYplaneAngle()).ToString();
+         this.txt_xyPlaneAngle.Text = deg(camera.LookDirection.getXZplaneAngle()).ToString();
          this.txt_upAngle.Text = deg(this.camera.LookDirection.getUpAngle()).ToString();
          this.txt_speed.Text = this.viewpointForwardSpeed.ToString();
          this.txt_positionX.Text = this.camera.Position.X.ToString();
          this.txt_positionY.Text = this.camera.Position.Y.ToString();
          this.txt_positionZ.Text = this.camera.Position.Z.ToString();
+         this.txt_lookX.Text = this.camera.LookDirection.X.ToString();
+         this.txt_lookY.Text = this.camera.LookDirection.Y.ToString();
+         this.txt_lookZ.Text = this.camera.LookDirection.Z.ToString();
       }
 
       private void hydrateKeyIsDownDictionary()
@@ -352,6 +355,26 @@ namespace DataTicker3dViz
          aTicker.TickerGeometryModel3D.Material = new DiffuseMaterial(Brushes.Tomato);
          this.group.Children.Add(aTicker.TickerGeometryModel3D);
          //this.viewport.UpdateLayout();
+         openOtherDataFile();
+      }
+
+      private void openOtherDataFile()
+      {
+         USGS_LakeLevelTxtFileReader =
+            new USGS_LakeLevelTxtFileReader
+               (@"C:\SourceModules\DataTicker3D\DataTicker3D\SampleData\JordanLakeAndHurricaneFran.txt");
+
+         TimeTicker3D aTicker = new TimeTicker3D();
+         aTicker.Brush = Brushes.DeepSkyBlue;
+         aTicker.transform.zAdjustment = -5.0;
+         aTicker.rawData = USGS_LakeLevelTxtFileReader.getData();
+
+         //ModelVisual3D modelVisual = new ModelVisual3D();
+         //modelVisual.Content = aTicker.TickerGeometryModel3D;
+         aTicker.TickerGeometryModel3D.BackMaterial = new DiffuseMaterial(Brushes.YellowGreen);
+         aTicker.TickerGeometryModel3D.Material = new DiffuseMaterial(Brushes.Tomato);
+         this.group.Children.Add(aTicker.TickerGeometryModel3D);
+         //this.viewport.UpdateLayout();
       }
 
       private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -422,17 +445,18 @@ namespace DataTicker3dViz
             Math.Sign(zRotationSpeedIncrement) * maxZrotationSpeed :
             zRotationSpeedIncrement;
 
-         Double upAngleChange = 0;
-         if(keyIsDown[Key.Down] == true) upAngleChange = viewpointUpAngleRotationSpeed;
-         if(keyIsDown[Key.Up] == true) upAngleChange = -1 * viewpointUpAngleRotationSpeed;
+         Double upAngleChange; 
+         upAngleChange = 0;
+         if(keyIsDown[Key.Up] == true) upAngleChange = viewpointUpAngleRotationSpeed;
+         if(keyIsDown[Key.Down] == true) upAngleChange = -1 * viewpointUpAngleRotationSpeed;
          if (upAngleChange != 0.0)
          {
             this.upAngle = this.camera.LookDirection.getUpAngle();
 
             this.upAngle += upAngleChange;
-
+            
             this.upAngle = Math.Abs(deg(upAngle)) > 86.0 ?
-               Math.Sign(upAngle) * 86.0 :
+               Math.Sign(upAngle) * rad(86.0) :
                upAngle;
             myDebugPrint(upAngle.ToString());
             myDebugPrintObj(this.camera.LookDirection);
@@ -444,7 +468,7 @@ namespace DataTicker3dViz
          if (keyIsDown[Key.Left] || keyIsDown[Key.Right])
          {
             this.camera.LookDirection =
-               rotateVector3DaboutWorldZ(viewpointRotationSpeedAboutWorldZ, this.camera.LookDirection);
+               rotateVector3DaboutWorldY(viewpointRotationSpeedAboutWorldZ, this.camera.LookDirection);
          }
          else
          {
@@ -519,45 +543,40 @@ namespace DataTicker3dViz
       {
          return;
          var vec = new Vector3D(10, 15, 10);
-         Debug.Print(getXYplaneAngleDegrees(vec).ToString());
-         var rotatedVec = rotateVector3DaboutWorldZ(-45.0, vec);
-         Debug.Print(getXYplaneAngleDegrees(rotatedVec).ToString());
+         Debug.Print(getXZplaneAngleDegrees(vec).ToString());
+         var rotatedVec = rotateVector3DaboutWorldY(-45.0, vec);
+         Debug.Print(getXZplaneAngleDegrees(rotatedVec).ToString());
       }
 
-      private Vector3D rotateVector3DaboutWorldZ(Double rotation, Vector3D vec)
+      private Vector3D rotateVector3DaboutWorldY(Double rotation, Vector3D vec)
       {
-         Double xyLength = getLengthProjToXYplane(vec);
-         Double xyDirection = getXYplaneAngleDegrees(vec);
+         Double xyLength = getLengthProjToXZplane(vec);
+         Double xyDirection = getXZplaneAngleDegrees(vec);
          xyDirection += rotation;
          Double xyDirRad = rad(xyDirection);
          return new Vector3D(
                xyLength * Math.Cos(xyDirRad),
-               xyLength * Math.Sin(xyDirRad),
-               vec.Z);
+               vec.Y,
+               xyLength * Math.Sin(xyDirRad));
       }
 
       private Vector3D setVectorUpAngle(Double newUpAngle, Vector3D vec)
       {
-         Double newZvalue = getLengthProjToXYplane(vec) * Math.Tan(rad(newUpAngle));
+         Double newYvalue = getLengthProjToXZplane(vec) * Math.Tan(newUpAngle);
          return new Vector3D(
             vec.X,
-            vec.Y,
-            newZvalue);
+            newYvalue,
+            vec.Z);
       }
 
-      private Double getLengthProjToXYplane(Vector3D vec)
+      private Double getLengthProjToXZplane(Vector3D vec)
       {
-         return Math.Sqrt(vec.X * vec.X + vec.Y * vec.Y);
+         return Math.Sqrt(vec.X * vec.X + vec.Z * vec.Z);
       }
 
-      private Double getXYplaneAngleDegrees(Vector3D vec)
+      private Double getXZplaneAngleDegrees(Vector3D vec)
       {
-         return deg(Math.Atan2(vec.Y, vec.X));
-      }
-
-      private Double getUpAngle(Vector3D vec)
-      {
-         return deg(Math.Atan2(vec.Z, getLengthProjToXYplane(vec)));
+         return deg(Math.Atan2(vec.Z, vec.X));
       }
 
       private Double deg(Double rad)
@@ -582,25 +601,25 @@ namespace DataTicker3dViz
                return "Down";
          }
          return "Theta = " + deg(Math.Atan2(vec.Y, vec.X)) +
-            "  Up Angle = " + deg(Math.Atan2(vec.Z, getLengthProjToXYplane(vec)));
+            "  Up Angle = " + deg(Math.Atan2(vec.Z, getLengthProjToXZplane(vec)));
       }
    }
 
    public static class vector3dExtensionMethods
    {
-      public static double getXYplaneAngle(this Vector3D vec)
+      public static double getXZplaneAngle(this Vector3D vec)
       {
-         return Math.Atan2(vec.Y, vec.X);
+         return Math.Atan2(vec.Z, vec.X);
       }
 
-      public static double xyPlaneLength(this Vector3D vec)
+      public static double xzPlaneLength(this Vector3D vec)
       {
-         return Math.Sqrt(vec.X * vec.X + vec.Y * vec.Y);
+         return Math.Sqrt(vec.X * vec.X + vec.Z * vec.Z);
       }
 
       public static double getUpAngle(this Vector3D vec)
       {
-         return Math.Atan2(vec.Z, vec.xyPlaneLength());
+         return Math.Atan2(vec.Y, vec.xzPlaneLength());
       }
    }
 }

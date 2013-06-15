@@ -37,19 +37,28 @@
                    HorizontalAlignment="Left" 
                    VerticalAlignment="Top" />
             <TextBox x:Name="txt_speed" />
-            
-            <GroupBox Margin="0,4,0,0"
-                HorizontalAlignment="Left">
-                <GroupBox.Header>
-                    Position
-                </GroupBox.Header>
+
+            <GroupBox Margin="0,4,0,0" Header="Position" >
                 <StackPanel>
+                    <Label Content="Position:" />
                     <Label Content="X:" />
                     <TextBox x:Name="txt_positionX" />
                     <Label Content="Y:" />
                     <TextBox x:Name="txt_positionY" />
                     <Label Content="Z:" />
                     <TextBox x:Name="txt_positionZ" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Margin="0,4,0,0" Header="Look Direction" >
+                <StackPanel>
+                    <Label Content="Look Direction:" />
+                    <Label Content="X:" />
+                    <TextBox x:Name="txt_lookX" />
+                    <Label Content="Y:" />
+                    <TextBox x:Name="txt_lookY" />
+                    <Label Content="Z:" />
+                    <TextBox x:Name="txt_lookZ" />
                 </StackPanel>
             </GroupBox>
 

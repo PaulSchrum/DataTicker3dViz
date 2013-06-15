@@ -36,7 +36,7 @@ namespace DataTicker3dViz
                   if (DateTime.TryParse(parsedLine[2], out date) == true)
                   {
                      Double elevation;
-                     if (Double.TryParse(parsedLine[3], out elevation) == true)
+                     if (Double.TryParse(parsedLine[5], out elevation) == true)
                      {
                         returnDict.Add(date, elevation);
                      }
