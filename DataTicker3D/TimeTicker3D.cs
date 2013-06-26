@@ -39,7 +39,8 @@ namespace DataTicker3D
          MeshGeometry3D meshGeom = new MeshGeometry3D();
          foreach (var reading in rawData_)
          {
-            Double x = (reading.Key - transform.xStartDate).Days;
+            var deltaTime = reading.Key - transform.xStartDate;
+            Double x = deltaTime.TotalSeconds / (3600 * 24);
             Double y = (reading.Value - transform.yDatum) * transform.yExaggeration;
             Double z = transform.zAdjustment;
             meshGeom.Positions.Add(new Point3D(x, y, z - this.TickerWidth / 2));
@@ -67,6 +68,8 @@ namespace DataTicker3D
 
       private void setupTransform()
       {
+         if (rawData == null) return;
+         if (rawData.Count == 0) return;
          transform.xStartDate = rawData_.FirstOrDefault().Key.Date;
          transform.yDatum = (from reading in rawData_
                              select reading.Value).Min();

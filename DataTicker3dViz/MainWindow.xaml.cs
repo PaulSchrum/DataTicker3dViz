@@ -36,6 +36,7 @@ namespace DataTicker3dViz
    /// </summary>
    public partial class MainWindow : Window
    {
+      private GeometryModel3D aTriangle = null;
       private GeometryModel3D mGeometry;
       private bool mDown;
       private Point mLastPos;
@@ -54,6 +55,8 @@ namespace DataTicker3dViz
       private Vector3D totalCameraMoveVector { get; set; }
       private bool printDiagnostics { get; set; }
       Double upAngle = 0.0;
+      Double pivotDistance = 37.5;
+      Double pivotRate = 0.5;  // Degrees per second
 
       public MainWindow()
       {
@@ -62,12 +65,12 @@ namespace DataTicker3dViz
          //testRotateVector();
          viewpointVelocity = new Vector3D(0, 0, 0);
          viewpointRotationSpeedAboutWorldZ = 0.0;
-         viewpointUpAngleRotationSpeed = 0.05;
+         viewpointUpAngleRotationSpeed = 0.005;
          hydrateKeyIsDownDictionary();
-         this.camera.Position = new Point3D(0, -4, 37);
+         this.camera.Position = new Point3D(0, 6, 37);
          this.camera.FieldOfView = 50;
          //this.camera.LookDirection = new Vector3D(-10, -15, -35);
-         this.camera.LookDirection = new Vector3D(5, 1, -10);
+         this.camera.LookDirection = new Vector3D(1.5, -2, -10);
          this.upAngle = this.camera.LookDirection.getUpAngle();
          this.camera.UpDirection = new Vector3D(0, 1, 0);
          cameraOriginalPosition = new Point3D(this.camera.Position.X,
@@ -92,7 +95,6 @@ namespace DataTicker3dViz
          dispatcherTimer.Start();
 
          makeAtestObject();
-         openDataFile();
          updateGUItextBoxes();
       }
 
@@ -126,6 +128,10 @@ namespace DataTicker3dViz
          keyIsDown.Add(System.Windows.Input.Key.NumPad2, false);  // slew Down (-Y, world Z)
          keyIsDown.Add(System.Windows.Input.Key.Divide, false);  // slew Left (+Z, world Y)
          keyIsDown.Add(System.Windows.Input.Key.NumPad0, false);   // slew Right (-Z, world Y)
+         keyIsDown.Add(System.Windows.Input.Key.NumPad1, false);  // pivot view clockwise
+         keyIsDown.Add(System.Windows.Input.Key.NumPad3, false);  // pivot view counterclockwise
+         keyIsDown.Add(System.Windows.Input.Key.LeftShift, false);  // pivot view counterclockwise
+         keyIsDown.Add(System.Windows.Input.Key.RightShift, false);  // pivot view counterclockwise
          
       }
 
@@ -164,9 +170,9 @@ namespace DataTicker3dViz
          //modvis.Content = geomod;
          this.group.Children.Add(geomod);
 
-         geomod = new GeometryModel3D();
+         aTriangle = new GeometryModel3D();
          mesh = new MeshGeometry3D();
-         geomod.Geometry = mesh;
+         aTriangle.Geometry = mesh;
 
          mesh.Positions.Add(new Point3D(0, 0, 0));
          mesh.Positions.Add(new Point3D(-5, 1, 0));
@@ -174,17 +180,17 @@ namespace DataTicker3dViz
 
          mesh.TriangleIndices = new Int32Collection(new int[] { 0, 1, 2 });
 
-         geomod.Geometry = mesh;
+         aTriangle.Geometry = mesh;
 
          DiffuseMaterial dm = new DiffuseMaterial(Brushes.Purple);
          dm.Color = Color.FromArgb(126, 127, 0, 127);
-         geomod.Material = dm;
-         geomod.BackMaterial = new DiffuseMaterial(Brushes.Orange);
+         aTriangle.Material = dm;
+         aTriangle.BackMaterial = new DiffuseMaterial(Brushes.Orange);
          //geomod.Transform = new Transform3DGroup();
 
          //ModelVisual3D modvis = new ModelVisual3D();
          //modvis.Content = geomod;
-         this.group.Children.Add(geomod);
+         this.group.Children.Add(aTriangle);
       }
 
       private void Grid_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -202,9 +208,31 @@ namespace DataTicker3dViz
          mGeometry.Transform = new Transform3DGroup();
       }
 
+      private double dx = 0.2; private double dy = 0.05; private double dz = 0.02;
+      private double xltX = 0; private double xltY = 0; private double xltZ = 0;
+      private double rotZ=0; private double dRotZ = 0.5;
       private Double lightX = -8;
       private void keepRotatingScreen(object sender, EventArgs e)
       {
+         if (null != aTriangle && false)
+         {
+            var xfrm = new Transform3DGroup();
+
+            rotZ += dRotZ;
+            RotateTransform3D rotateTransform3D = new RotateTransform3D();   
+            AxisAngleRotation3D axisAngleRotation3d = new AxisAngleRotation3D();  
+            axisAngleRotation3d.Axis = new Vector3D(0, 1, 0);  
+            axisAngleRotation3d.Angle = rotZ;  
+            rotateTransform3D.Rotation = axisAngleRotation3d;
+            xfrm.Children.Add(rotateTransform3D);
+
+            xltX += dx; xltY += dy; xltZ += dz;
+            var tranVec = new Vector3D(xltX, xltY, xltZ);
+            xfrm.Children.Add(new TranslateTransform3D(tranVec));
+
+            aTriangle.Transform = xfrm;
+            
+         }
          processKeyPresses();
          if (this.mDown == false)
          {
@@ -317,6 +345,7 @@ namespace DataTicker3dViz
       {
          this.mDown = e.LeftButton == MouseButtonState.Pressed;
          startMousePosition = Mouse.GetPosition(viewport);
+         e.Handled = false;
          //processMouseNavigation(this.mDown);
       }
 
@@ -336,10 +365,30 @@ namespace DataTicker3dViz
       private void btn_openData_Click(object sender, RoutedEventArgs e)
       {
          SystemSounds.Beep.Play();
-         openDataFile();
+         openLakeDataFile();
       }
 
-      private void openDataFile()
+      private void openTrafficDataFile()
+      {
+         var TrafficDataFileReader =
+            new TrafficDataFileReader
+               (@"C:\SourceModules\DataTicker3D\DataTicker3D\SampleData\Albany_VOL_2009.csv");
+         //TrafficDataFileReader.RecordingDeviceID = "118261";
+         TrafficDataFileReader.RecordingDeviceID = "110012";
+
+         TimeTicker3D aTicker = new TimeTicker3D();
+         aTicker.Brush = Brushes.Khaki;
+         aTicker.transform.yExaggeration = 0.005;
+         aTicker.rawData = TrafficDataFileReader.getData();
+
+         aTicker.TickerGeometryModel3D.BackMaterial = new DiffuseMaterial(Brushes.YellowGreen);
+         aTicker.TickerGeometryModel3D.Material = new DiffuseMaterial(Brushes.Tomato);
+         aTicker.transform.yExaggeration = 0.05;
+         this.group.Children.Add(aTicker.TickerGeometryModel3D);
+
+      }
+
+      private void openLakeDataFile()
       {
          USGS_LakeLevelTxtFileReader =
             new USGS_LakeLevelTxtFileReader
@@ -349,12 +398,10 @@ namespace DataTicker3dViz
          aTicker.Brush = Brushes.Khaki;
          aTicker.rawData = USGS_LakeLevelTxtFileReader.getData();
 
-         //ModelVisual3D modelVisual = new ModelVisual3D();
-         //modelVisual.Content = aTicker.TickerGeometryModel3D;
          aTicker.TickerGeometryModel3D.BackMaterial = new DiffuseMaterial(Brushes.YellowGreen);
          aTicker.TickerGeometryModel3D.Material = new DiffuseMaterial(Brushes.Tomato);
          this.group.Children.Add(aTicker.TickerGeometryModel3D);
-         //this.viewport.UpdateLayout();
+
          openOtherDataFile();
       }
 
@@ -447,8 +494,8 @@ namespace DataTicker3dViz
 
          Double upAngleChange; 
          upAngleChange = 0;
-         if(keyIsDown[Key.Up] == true) upAngleChange = viewpointUpAngleRotationSpeed;
-         if(keyIsDown[Key.Down] == true) upAngleChange = -1 * viewpointUpAngleRotationSpeed;
+         if(keyIsDown[Key.Up] == true) upAngleChange = -1 * viewpointUpAngleRotationSpeed;
+         if(keyIsDown[Key.Down] == true) upAngleChange = viewpointUpAngleRotationSpeed;
          if (upAngleChange != 0.0)
          {
             this.upAngle = this.camera.LookDirection.getUpAngle();
@@ -474,6 +521,26 @@ namespace DataTicker3dViz
          {
             zRotationSpeedIncrement = 0.0;
             viewpointRotationSpeedAboutWorldZ = 0.0;
+         }
+
+         if (keyIsDown[Key.NumPad1] || keyIsDown[Key.NumPad3])
+         {
+            double localPivotRate;
+            Double amplifier;
+            amplifier = 1.0;
+            if (keyIsDown[Key.LeftShift] == true || keyIsDown[Key.RightShift] == true)
+               amplifier = 3.0;
+            else amplifier = 1.0;
+
+            Double multiplier; Vector3D pivotBackVec; Point3D pivotPoint;
+            multiplier = keyIsDown[Key.NumPad1] ? -1.0 : 1.0;
+            // 
+            localPivotRate = Math.Abs(pivotRate) * multiplier * amplifier;
+            pivotPoint = camera.Position + pivotDistance * camera.LookDirection / camera.LookDirection.Length;
+            camera.LookDirection = rotateVector3DaboutWorldY(localPivotRate, camera.LookDirection);
+            pivotBackVec = -1 * pivotDistance * camera.LookDirection / camera.LookDirection.Length;
+            String pvBk = pivotBackVec.getAsModifiedPolar();
+            camera.Position = pivotPoint + pivotBackVec;
          }
 
          var vectorToAdd = viewpointForwardSpeed * this.camera.LookDirection / 
@@ -603,6 +670,32 @@ namespace DataTicker3dViz
          return "Theta = " + deg(Math.Atan2(vec.Y, vec.X)) +
             "  Up Angle = " + deg(Math.Atan2(vec.Z, getLengthProjToXZplane(vec)));
       }
+
+      private void mnu_openLakeData_Click(object sender, RoutedEventArgs e)
+      {
+         openLakeDataFile();
+         updateGUItextBoxes();
+      }
+
+      private void clearVisualizedData()
+      {
+         for (int index = this.group.Children.Count-1;index > 3; index--)
+         {
+            this.group.Children.RemoveAt(index);
+         }
+      }
+
+      private void mnu_clearVisualizedData_Click(object sender, RoutedEventArgs e)
+      {
+         clearVisualizedData();
+      }
+
+      private void mnu_openTrafficData_Click(object sender, RoutedEventArgs e)
+      {
+         openTrafficDataFile();
+      }
+      
+
    }
 
    public static class vector3dExtensionMethods
@@ -620,6 +713,12 @@ namespace DataTicker3dViz
       public static double getUpAngle(this Vector3D vec)
       {
          return Math.Atan2(vec.Y, vec.xzPlaneLength());
+      }
+
+      public static string getAsModifiedPolar(this Vector3D vec)
+      {
+         return "R: " + vec.Length.ToString() + " Az: " + vec.getXZplaneAngle().ToString() 
+            + " Up: " + vec.getUpAngle();
       }
    }
 }
