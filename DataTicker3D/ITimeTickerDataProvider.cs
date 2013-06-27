@@ -9,5 +9,6 @@ namespace DataTicker3D
    public interface ITimeTickerDataProvider
    {
       SortedDictionary<DateTime, Double> getData();
+      List<SortedDictionary<DateTime, Double>> getDataList();
    }
 }
