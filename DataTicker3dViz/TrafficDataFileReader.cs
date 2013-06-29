@@ -58,7 +58,7 @@ namespace DataTicker3dViz
       {
          var retval = new List<SortedDictionary<DateTime, double>>();
          retval.Add(getData());
-         //return retval;
+         return retval;
       }
 
       private bool validateFileName()
