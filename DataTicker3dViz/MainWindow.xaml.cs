@@ -202,12 +202,6 @@ namespace DataTicker3dViz
          Debug.Print(camera.FieldOfView.ToString());
       }
 
-      private void Button_Click(object sender, RoutedEventArgs e)
-      {
-         camera.Position = new Point3D(camera.Position.X, camera.Position.Y, 5);
-         mGeometry.Transform = new Transform3DGroup();
-      }
-
       private double dx = 0.2; private double dy = 0.05; private double dz = 0.02;
       private double xltX = 0; private double xltY = 0; private double xltZ = 0;
       private double rotZ=0; private double dRotZ = 0.5;
@@ -360,12 +354,6 @@ namespace DataTicker3dViz
       private void Grid_MouseUp(object sender, MouseButtonEventArgs e)
       {
          mDown = false;
-      }
-
-      private void btn_openData_Click(object sender, RoutedEventArgs e)
-      {
-         SystemSounds.Beep.Play();
-         openLakeDataFile();
       }
 
       private void openTrafficDataFile()
