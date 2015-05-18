@@ -57,20 +57,22 @@ namespace DataTicker3dViz
       Double upAngle = 0.0;
       Double pivotDistance = 37.5;
       Double pivotRate = 0.5;  // Degrees per second
+      private bool mayShowMouseMoves { get; set; }
+      private bool showMouseMoves { get; set; }
 
       public MainWindow()
       {
          InitializeComponent();
 
-         //testRotateVector();
+         mayShowMouseMoves = showMouseMoves = false;
          viewpointVelocity = new Vector3D(0, 0, 0);
          viewpointRotationSpeedAboutWorldZ = 0.0;
          viewpointUpAngleRotationSpeed = 0.005;
          hydrateKeyIsDownDictionary();
-         this.camera.Position = new Point3D(0, 6, 37);
-         this.camera.FieldOfView = 50;
+         this.camera.Position = new Point3D(-.5, 2.5, 8);
+         this.camera.FieldOfView = 55;
          //this.camera.LookDirection = new Vector3D(-10, -15, -35);
-         this.camera.LookDirection = new Vector3D(1.5, -2, -10);
+         this.camera.LookDirection = new Vector3D(-1, -2, -20);
          this.upAngle = this.camera.LookDirection.getUpAngle();
          this.camera.UpDirection = new Vector3D(0, 1, 0);
          cameraOriginalPosition = new Point3D(this.camera.Position.X,
@@ -82,7 +84,7 @@ namespace DataTicker3dViz
             count++;
             if (aThing is DirectionalLight)
             {
-               theDirectionalLight = count;
+               theDirectionalLight = count;  // get the index for the DirectionalLight
                break;
             }
          }
@@ -174,18 +176,39 @@ namespace DataTicker3dViz
          mesh = new MeshGeometry3D();
          aTriangle.Geometry = mesh;
 
-         mesh.Positions.Add(new Point3D(0, 0, 0));
-         mesh.Positions.Add(new Point3D(-5, 1, 0));
+         mesh.Positions.Add(new Point3D(-5, 4, 0));
+         mesh.Positions.Add(new Point3D(0, 4, 0));
          mesh.Positions.Add(new Point3D(-5, 0, 0));
+         mesh.Positions.Add(new Point3D(0, 0, 0));
 
-         mesh.TriangleIndices = new Int32Collection(new int[] { 0, 1, 2 });
+         mesh.TriangleIndices = new Int32Collection(new int[] { 0, 2, 3, //}
+         1, 0, 3 }
+         );
 
          aTriangle.Geometry = mesh;
 
+         var img = @"C:\Users\Paul\Documents\temp\CIU Prayer Towers in snow.JPG";
+         var imageBrush = new ImageBrush(new BitmapImage(new Uri(img, UriKind.Relative)));
+         imageBrush.ViewportUnits = BrushMappingMode.Absolute;
+         var xfrm = new TransformGroup();
+         //xfrm.Children.Add(new SkewTransform(0.0, -45.0));
+         imageBrush.Transform = xfrm;
+
+         DiffuseMaterial dmImage = new DiffuseMaterial(imageBrush);
+
          DiffuseMaterial dm = new DiffuseMaterial(Brushes.Purple);
          dm.Color = Color.FromArgb(126, 127, 0, 127);
-         aTriangle.Material = dm;
-         aTriangle.BackMaterial = new DiffuseMaterial(Brushes.Orange);
+         //aTriangle.Material = dm;
+         aTriangle.Material = dmImage;
+         //aTriangle.BackMaterial = new DiffuseMaterial(Brushes.Orange);
+         aTriangle.BackMaterial = dmImage;
+         mesh.TextureCoordinates =
+            new PointCollection(new Point[] { 
+               new Point(0,0),
+               new Point(1, 0),
+               new Point(0,1),
+               new Point(1,1)
+               });
          //geomod.Transform = new Transform3DGroup();
 
          //ModelVisual3D modvis = new ModelVisual3D();
@@ -207,7 +230,7 @@ namespace DataTicker3dViz
       private double rotZ=0; private double dRotZ = 0.5;
       private Double lightX = -8;
       private void keepRotatingScreen(object sender, EventArgs e)
-      {
+      {  // TRINUG is awesome, right Greg?
          if (null != aTriangle && false)
          {
             var xfrm = new Transform3DGroup();
@@ -667,6 +690,8 @@ namespace DataTicker3dViz
 
       private void clearVisualizedData()
       {
+         mayShowMouseMoves = false;
+         showMouseMoves = false;
          for (int index = this.group.Children.Count-1;index > 3; index--)
          {
             this.group.Children.RemoveAt(index);
@@ -681,6 +706,20 @@ namespace DataTicker3dViz
       private void mnu_openTrafficData_Click(object sender, RoutedEventArgs e)
       {
          openTrafficDataFile();
+      }
+
+      private void mnu_startMouseTracking_Click(object sender, RoutedEventArgs e)
+      {
+         mayShowMouseMoves = true;
+         showMouseMoves = true;
+      }
+
+      private void Window_MouseMove(object sender, MouseEventArgs e)
+      {
+         if (false == mayShowMouseMoves) return;
+         var pos = e.GetPosition(this.viewport);
+         this.txt_mouseX.Text = (pos.X - this.viewport.ActualWidth / 2.0).ToString();
+         this.txt_mouseY.Text = (this.viewport.ActualHeight / 2.0 - pos.Y).ToString();
       }
       
 
