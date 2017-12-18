@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
@@ -45,6 +46,7 @@ namespace DataTicker3dViz
         DispatcherTimer dispatcherTimer = new DispatcherTimer();
         //bool timerIsRegistered;
         USGS_LakeLevelTxtFileReader USGS_LakeLevelTxtFileReader = null;
+        TrigFunctionsCsv trigFunctionCsv = null;
         private int theDirectionalLight = -1;
         private Dictionary<System.Windows.Input.Key, bool> keyIsDown;
         private Vector3D viewpointVelocity { get; set; }
@@ -59,10 +61,15 @@ namespace DataTicker3dViz
         Double pivotRate = 0.5;  // Degrees per second
         private bool mayShowMouseMoves { get; set; }
         private bool showMouseMoves { get; set; }
+        private String testDataDir { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
+
+            var cwd = System.IO.Directory.GetCurrentDirectory();
+            var topDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(cwd, @"..\.."));
+            this.testDataDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(topDir, @"SampleData"));
 
             mayShowMouseMoves = showMouseMoves = false;
             viewpointVelocity = new Vector3D(0, 0, 0);
@@ -435,6 +442,32 @@ namespace DataTicker3dViz
             //this.viewport.UpdateLayout();
         }
 
+        private void openSineWaveData()
+        {
+            if(!System.IO.Directory.Exists(this.testDataDir))
+                return;
+
+            var testDataFile = System.IO.Path.GetFullPath(System.IO.Path.Combine(this.testDataDir, "SineAndCosine.csv"));
+            if(!System.IO.File.Exists(testDataFile))
+                return;
+
+            var zAdjust = 0.0;
+            trigFunctionCsv = new TrigFunctionsCsv
+                (testDataFile);
+            var allData = trigFunctionCsv.getDataList();
+            foreach(var aDataSet in allData)
+            {
+                var aTicker = new TimeTicker3D();
+                aTicker.Brush = Brushes.DeepSkyBlue;
+                aTicker.transform.zAdjustment = zAdjust;
+                aTicker.rawData = aDataSet;
+                aTicker.TickerGeometryModel3D.BackMaterial = new DiffuseMaterial(Brushes.YellowGreen);
+                aTicker.TickerGeometryModel3D.Material = new DiffuseMaterial(Brushes.Tomato);
+                this.group.Children.Add(aTicker.TickerGeometryModel3D);
+                zAdjust -= 5.0;
+            }
+        }
+
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if(e.IsRepeat == true) return;
@@ -722,7 +755,10 @@ namespace DataTicker3dViz
             this.txt_mouseY.Text = (this.viewport.ActualHeight / 2.0 - pos.Y).ToString();
         }
 
-
+        private void mnu_openSineWaveData_Click(object sender, RoutedEventArgs e)
+        {
+            openSineWaveData();
+        }
     }
 
     public static class vector3dExtensionMethods

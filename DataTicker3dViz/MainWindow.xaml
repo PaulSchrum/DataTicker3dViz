@@ -23,11 +23,16 @@
                 <MenuItem x:Name="mnu_clearVisualizedData" 
                           InputGestureText="Clear Visualized Data" Click="mnu_clearVisualizedData_Click" 
                           />
-                <MenuItem x:Name="mnu_openLakeData" 
-                          InputGestureText="Open Lake Data" Click="mnu_openLakeData_Click" 
+            <MenuItem x:Name="mnu_openSineWaveData" 
+                          InputGestureText="Open Sine Wave Data" Click="mnu_openSineWaveData_Click"
                           />
-                <MenuItem x:Name="mnu_openTrafficData" 
+            <MenuItem x:Name="mnu_openLakeData" 
+                          InputGestureText="Open Lake Data" Click="mnu_openLakeData_Click" 
+                          IsEnabled="False"
+                          />
+            <MenuItem x:Name="mnu_openTrafficData" 
                           InputGestureText="Open Traffic Data" Click="mnu_openTrafficData_Click"  
+                          IsEnabled="False"
                           />
                 <MenuItem x:Name="mnu_startMouseTracking" 
                           InputGestureText="Start Mouse Tracking" Click="mnu_startMouseTracking_Click"  
